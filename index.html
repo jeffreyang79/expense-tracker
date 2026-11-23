@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expense Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Expense Tracker <small>SGD</small></h1>
+</header>
+
+<main>
+  <!-- Add / edit form -->
+  <section class="card">
+    <div class="rowhead">
+      <h2 id="formTitle">Add expense</h2>
+      <button type="button" class="secondary small" id="manageToggle" aria-expanded="false">Manage lists</button>
+    </div>
+    <form id="expenseForm">
+      <input type="hidden" id="editId">
+      <label><span>Payment mode <b class="req">*</b></span>
+        <span class="inline">
+          <select id="fMode" required></select>
+          <button type="button" class="small" id="addModeBtn" title="Add a payment mode, e.g. a specific credit card">+</button>
+        </span>
+      </label>
+      <label><span>Amount (SGD) <b class="req">*</b></span>
+        <input type="number" id="fAmount" step="0.01" min="0.01" inputmode="decimal" required>
+      </label>
+      <label><span>Category <b class="req">*</b></span>
+        <span class="inline">
+          <select id="fCategory" required></select>
+          <button type="button" class="small" id="addCatBtn" title="Add a category">+</button>
+        </span>
+      </label>
+      <label><span>Date <b class="req">*</b></span>
+        <input type="date" id="fDate" required>
+      </label>
+      <label class="wide">Notes (optional)
+        <input type="text" id="fNotes" maxlength="200">
+      </label>
+      <label class="check">
+        <input type="checkbox" id="fRecurring"> Repeat monthly (optional)
+      </label>
+      <div class="actions">
+        <button type="submit" id="saveBtn">Add expense</button>
+        <button type="button" id="cancelBtn" class="secondary" hidden>Cancel edit</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Filters -->
+  <section class="card">
+    <h2>Filter</h2>
+    <div class="filters">
+      <label>Payment mode <select id="xMode"></select></label>
+      <label>Category <select id="xCategory"></select></label>
+      <label>Period
+        <select id="xPeriod">
+          <option value="all">All time</option>
+          <option value="month">Month</option>
+          <option value="year">Year</option>
+          <option value="range">Custom date range</option>
+        </select>
+      </label>
+      <label id="boxMonth" hidden>Month <input type="month" id="xMonth"></label>
+      <label id="boxYear" hidden>Year <input type="number" id="xYear" min="2000" max="2100"></label>
+      <label id="boxFrom" hidden>From <input type="date" id="xFrom"></label>
+      <label id="boxTo" hidden>To <input type="date" id="xTo"></label>
+      <label>Reconciled
+        <select id="xRec">
+          <option value="all">All</option>
+          <option value="yes">Matched only</option>
+          <option value="no">Unmatched only</option>
+        </select>
+      </label>
+      <label>Search notes <input type="text" id="xText"></label>
+      <button type="button" class="secondary" id="resetBtn">Reset filters</button>
+    </div>
+  </section>
+
+  <!-- Totals -->
+  <section class="totals">
+    <div class="total big"><span>Total (filtered)</span><strong id="tTotal">0.00</strong><em id="tCount">0 items</em></div>
+    <div class="total"><span>Matched ✓</span><strong id="tMatched">0.00</strong></div>
+    <div class="total"><span>Unmatched</span><strong id="tUnmatched">0.00</strong></div>
+  </section>
+
+  <!-- Transactions -->
+  <section class="card">
+    <div class="rowhead">
+      <h2>Transactions</h2>
+      <span class="hint">Tick ✓ as you match each line against your card bill.</span>
+    </div>
+    <div class="tablewrap">
+      <table id="txTable">
+        <thead>
+          <tr>
+            <th title="Matched with statement">✓</th>
+            <th>Date</th><th>Payment mode</th><th>Category</th>
+            <th class="num">Amount</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="emptyMsg" class="hint" hidden>No transactions match the filters.</p>
+  </section>
+
+  <!-- Analysis -->
+  <section class="card">
+    <h2>Where the money goes (filtered)</h2>
+    <div class="two">
+      <div>
+        <h3>By category</h3>
+        <table id="catTable"><tbody></tbody></table>
+      </div>
+      <div>
+        <h3>By month</h3>
+        <table id="monthTable"><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Manage lists -->
+  <section class="card" id="manageSection" hidden>
+    <div class="rowhead">
+      <h2>Manage payment modes &amp; categories</h2>
+      <button type="button" class="secondary small" id="manageClose">Close</button>
+    </div>
+    <p class="hint">Renaming also updates all existing transactions. A name can be deleted only when no transaction uses it.</p>
+    <div class="two">
+      <div><h3>Payment modes</h3><ul class="manage" id="manageModes"></ul></div>
+      <div><h3>Categories</h3><ul class="manage" id="manageCats"></ul></div>
+    </div>
+  </section>
+
+  <!-- Data tools -->
+  <section class="card">
+    <h2>Google Sheets &amp; backup</h2>
+    <div class="actions">
+      <button type="button" id="csvFiltered">Download CSV (filtered)</button>
+      <button type="button" id="csvAll" class="secondary">Download CSV (all)</button>
+      <button type="button" id="copyBtn">Copy filtered for pasting into Sheets</button>
+      <button type="button" id="backupBtn" class="secondary">Backup (JSON)</button>
+      <button type="button" id="restoreBtn" class="secondary">Restore backup</button>
+      <input type="file" id="restoreFile" accept=".json" hidden>
+    </div>
+    <p class="hint">In Google Sheets: File → Import → Upload the CSV, or click a cell and paste after copying.
+      CSV columns include Year and Month, so pivot tables work straight away.</p>
+  </section>
+</main>
+
+<div id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

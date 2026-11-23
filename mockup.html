@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phone mockups</title>
+<style>
+  body { margin: 0; background: #dfe4ea; font-family: system-ui, Arial, sans-serif; text-align: center; padding: 18px 10px; }
+  h1 { font-size: 1.1rem; margin: 0 0 4px; }
+  p { margin: 0 0 16px; color: #555; font-size: .85rem; }
+  .row { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; align-items: flex-start; }
+  .holder { /* reserves the scaled size of a phone */ }
+  .phone { background: #111; border-radius: 56px; padding: 14px; transform-origin: top left; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .screen { background: #1f4e79; padding-top: 46px; border-radius: 42px; overflow: hidden; }
+  .samsung .screen { border-radius: 32px; padding-top: 40px; }
+  .phone iframe { display: block; border: 0; background: #fff; border-radius: 42px; }
+  .island { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); width: 120px; height: 32px; background: #000; border-radius: 20px; z-index: 2; }
+  .punch { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); width: 18px; height: 18px; background: #000; border-radius: 50%; z-index: 2; }
+  .samsung { border-radius: 44px; }
+  .samsung iframe { border-radius: 32px; }
+  .label { margin-top: 8px; font-weight: 600; font-size: .9rem; }
+  .label small { display: block; font-weight: 400; color: #666; }
+</style>
+</head>
+<body>
+<h1>Expense Tracker on phones</h1>
+<p>Live app inside each phone's screen size (CSS pixels). Scroll inside a phone to see the rest of the page.</p>
+<div class="row">
+  <div>
+    <div class="holder" style="width:290px;height:610px">
+      <div class="phone" style="transform:scale(.62)">
+        <div class="island"></div>
+        <div class="screen"><iframe src="index.html" width="440" height="910" title="iPhone 17 Pro Max"></iframe></div>
+      </div>
+    </div>
+    <div class="label">iPhone 17 Pro Max<small>440 × 956</small></div>
+  </div>
+  <div>
+    <div class="holder" style="width:273px;height:585px">
+      <div class="phone samsung" style="transform:scale(.62)">
+        <div class="punch"></div>
+        <div class="screen"><iframe src="index.html" width="412" height="875" title="Galaxy S25+"></iframe></div>
+      </div>
+    </div>
+    <div class="label">Samsung Galaxy S25+<small>412 × 915</small></div>
+  </div>
+</div>
+</body>
+</html>
