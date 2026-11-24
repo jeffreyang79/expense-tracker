@@ -54,6 +54,7 @@ ul.manage li.dragging { background: #eaf2fb; box-shadow: 0 2px 8px rgba(0,0,0,.2
 ul.manage small { color: #888; }
 ul.manage button { padding: 3px 9px; font-size: .8rem; background: #fff; color: #1f4e79; }
 ul.manage button.del { color: #b3261e; border-color: #b3261e; }
+ul.manage button.iconbtn { font-size: 1.1rem; padding: 1px 6px; min-width: 34px; border-color: #d3dae3; color: #888; }
 ul.manage button:disabled { opacity: .35; cursor: not-allowed; }
 
 /* ---- mobile ---- */

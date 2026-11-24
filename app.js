@@ -5,7 +5,14 @@ const DEFAULT_MODES = ['Credit Card', 'PayNow', 'Cash'];
 const DEFAULT_CATS = ['Groceries', 'Dining', 'Online', 'Shopping', 'Transportation', 'Household',
   'Telco', 'Entertainment', 'Education', 'Healthcare', 'Gift', 'Travel', 'Insurance', 'Other'];
 
+const DEFAULT_ICONS = {
+  Groceries: '🛒', Dining: '🍽️', Online: '💻', Shopping: '🛍️', Transportation: '🚌', Household: '🏠',
+  Telco: '📱', Entertainment: '🎬', Education: '🎓', Healthcare: '🩺', Gift: '🎁', Travel: '✈️',
+  Insurance: '🛡️', Other: '📌'
+};
+
 let state = load();
+const catLabel = name => (state.icons[name] ? state.icons[name] + ' ' : '') + name;
 const $ = id => document.getElementById(id);
 
 /* ---------- storage ---------- */
@@ -16,10 +23,11 @@ function load() {
       s.modes = s.modes || DEFAULT_MODES.slice();
       s.categories = s.categories || DEFAULT_CATS.slice();
       s.series = s.series || [];
+      s.icons = Object.assign({}, DEFAULT_ICONS, s.icons || {});
       return s;
     }
   } catch (e) { /* fall through */ }
-  return { transactions: [], modes: DEFAULT_MODES.slice(), categories: DEFAULT_CATS.slice(), series: [] };
+  return { transactions: [], modes: DEFAULT_MODES.slice(), categories: DEFAULT_CATS.slice(), series: [], icons: Object.assign({}, DEFAULT_ICONS) };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -63,11 +71,11 @@ function generateRecurring() {
 }
 
 /* ---------- dropdowns ---------- */
-function fillSelect(sel, items, firstAll, keep) {
+function fillSelect(sel, items, firstAll, keep, labelFn) {
   const prev = keep ? sel.value : null;
   const first = firstAll ? '<option value="">All</option>'
     : '<option value="" selected disabled hidden>Select…</option>';   // blank by default in the form
-  sel.innerHTML = first + items.map(i => `<option>${esc(i)}</option>`).join('');
+  sel.innerHTML = first + items.map(i => `<option value="${esc(i)}">${esc(labelFn ? labelFn(i) : i)}</option>`).join('');
   if (prev && items.includes(prev)) sel.value = prev;
 }
 function allUsed(listKey, txKey) {   // list + any value still used by old transactions
@@ -77,9 +85,9 @@ function allUsed(listKey, txKey) {   // list + any value still used by old trans
 }
 function refreshLists() {
   fillSelect($('fMode'), state.modes, false, true);
-  fillSelect($('fCategory'), state.categories, false, true);
+  fillSelect($('fCategory'), state.categories, false, true, catLabel);
   fillSelect($('xMode'), allUsed('modes', 'mode'), true, true);
-  fillSelect($('xCategory'), allUsed('categories', 'category'), true, true);
+  fillSelect($('xCategory'), allUsed('categories', 'category'), true, true, catLabel);
   renderManage();
 }
 
@@ -88,7 +96,7 @@ function renderManage() {
   const build = (ul, list, txKey, kind) => {
     ul.innerHTML = state[list].map((name, i) => {
       const used = state.transactions.filter(t => t[txKey] === name).length;
-      return `<li data-i="${i}"><span class="handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</span><span class="nm">${esc(name)} <small>(${used})</small></span>
+      return `<li data-i="${i}"><span class="handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</span>${kind === 'category' ? `<button type="button" class="iconbtn" data-kind="category" data-i="${i}" data-act="icon" title="Change icon (any emoji)">${state.icons[name] || '＋'}</button>` : ''}<span class="nm">${esc(name)} <small>(${used})</small></span>
         <button type="button" data-kind="${kind}" data-i="${i}" data-act="rename">Rename</button>
         <button type="button" class="del" data-kind="${kind}" data-i="${i}" data-act="delete" ${used ? 'disabled title="In use by transactions"' : ''}>Delete</button></li>`;
     }).join('');
@@ -102,14 +110,20 @@ function manageClick(e) {
   if (!b.dataset.act) return;
   const kind = b.dataset.kind, list = kind === 'mode' ? 'modes' : 'categories', i = +b.dataset.i;
   const old = state[list][i];
-  if (b.dataset.act === 'delete') {
+  if (b.dataset.act === 'icon') {
+    const v = prompt(`Icon for "${old}" (paste or type an emoji; leave empty to remove):`, state.icons[old] || '');
+    if (v === null) return;
+    if (v.trim()) state.icons[old] = v.trim(); else delete state.icons[old];
+  } else if (b.dataset.act === 'delete') {
     if (!confirm(`Delete "${old}" from the list?`)) return;
     state[list].splice(i, 1);
+    if (kind === 'category') delete state.icons[old];
   } else {
     const nu = (prompt(`Rename "${old}" to:`, old) || '').trim();
     if (!nu || nu === old) return;
     if (state[list].some(x => x.toLowerCase() === nu.toLowerCase())) { alert(`"${nu}" already exists.`); return; }
     state[list][i] = nu;
+    if (kind === 'category' && state.icons[old]) { state.icons[nu] = state.icons[old]; delete state.icons[old]; }
     state.transactions.forEach(t => { if (t[kind] === old) t[kind] = nu; });
     state.series.forEach(s => { if (s[kind] === old) s[kind] = nu; });
     const fx = $(kind === 'mode' ? 'xMode' : 'xCategory');
@@ -178,7 +192,11 @@ $('addModeBtn').onclick = () => {
 $('addCatBtn').onclick = () => {
   const v = (prompt('New category:') || '').trim();
   if (!v) return;
-  if (!state.categories.includes(v)) state.categories.push(v);
+  if (!state.categories.includes(v)) {
+    state.categories.push(v);
+    const ic = (prompt(`Icon for "${v}" (optional - paste or type an emoji):`) || '').trim();
+    if (ic) state.icons[v] = ic;
+  }
   save(); refreshLists(); $('fCategory').value = v;
 };
 
@@ -337,25 +355,25 @@ function render() {
       <td class="c-rec"><input type="checkbox" data-rec="${t.id}" ${t.reconciled ? 'checked' : ''} aria-label="Matched with statement"></td>
       <td class="c-date">${esc(t.date)}</td>
       <td class="c-mode">${esc(t.mode)}</td>
-      <td class="c-cat">${esc(t.category)}</td>
+      <td class="c-cat">${esc(catLabel(t.category))}</td>
       <td class="num c-amt">${money(t.amount)}</td>
       <td class="c-notes">${esc(t.notes || '')}${t.seriesId ? `<span class="badge">${s && s.active ? 'monthly' : 'was monthly'}</span>` : ''}</td>
       <td class="actions-cell c-act"><button data-edit="${t.id}">Edit</button> <button class="del" data-del="${t.id}">Delete</button></td>
     </tr>`;
   }).join('');
 
-  renderBreakdown('catTable', rows, t => t.category, true, total);
+  renderBreakdown('catTable', rows, t => t.category, true, total, catLabel);
   renderBreakdown('monthTable', rows, t => monthOf(t.date), false, total);
 }
 
-function renderBreakdown(tableId, rows, keyFn, sortByAmount, total) {
+function renderBreakdown(tableId, rows, keyFn, sortByAmount, total, labelFn) {
   const sums = {};
   rows.forEach(t => { const k = keyFn(t); sums[k] = (sums[k] || 0) + t.amount; });
   let entries = Object.entries(sums);
   entries = sortByAmount ? entries.sort((a, b) => b[1] - a[1]) : entries.sort((a, b) => b[0].localeCompare(a[0]));
   const max = Math.max(...entries.map(e => e[1]), 1);
   $(tableId).querySelector('tbody').innerHTML = entries.length ? entries.map(([k, v]) =>
-    `<tr><td>${esc(k)}</td><td class="num">${money(v)}</td>
+    `<tr><td>${esc(labelFn ? labelFn(k) : k)}</td><td class="num">${money(v)}</td>
      <td class="num">${total ? (v / total * 100).toFixed(1) : 0}%</td>
      <td class="bar-cell"><div class="bar" style="width:${(v / max * 100).toFixed(1)}%"></div></td></tr>`
   ).join('') : '<tr><td class="hint">No data</td></tr>';
@@ -421,7 +439,8 @@ $('restoreFile').onchange = e => {
       if (!Array.isArray(s.transactions)) throw new Error('bad file');
       if (!confirm(`Replace ALL current data with this backup (${s.transactions.length} transactions)?`)) return;
       state = { transactions: s.transactions, modes: s.modes || DEFAULT_MODES.slice(),
-        categories: s.categories || DEFAULT_CATS.slice(), series: s.series || [] };
+        categories: s.categories || DEFAULT_CATS.slice(), series: s.series || [],
+        icons: Object.assign({}, DEFAULT_ICONS, s.icons || {}) };
       save(); refreshLists(); render(); toast('Backup restored');
     } catch (err) { alert('That file is not a valid backup.'); }
   };
