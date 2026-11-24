@@ -46,7 +46,11 @@ td.actions-cell button.del { background: #fff; color: #b3261e; border-color: #b3
 .req { color: #b3261e; }
 ul.manage { list-style: none; margin: 0; padding: 0; }
 ul.manage li { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid #e6eaf0; }
-ul.manage li span { flex: 1; }
+ul.manage li span.nm { flex: 1; }
+ul.manage li { background: #fff; user-select: none; -webkit-user-select: none; }
+ul.manage li.dragging { background: #eaf2fb; box-shadow: 0 2px 8px rgba(0,0,0,.2); position: relative; z-index: 1; }
+.handle { cursor: grab; touch-action: none; color: #888; font-size: 1.2rem; line-height: 1; padding: 8px 6px; letter-spacing: -2px; }
+.handle:active { cursor: grabbing; }
 ul.manage small { color: #888; }
 ul.manage button { padding: 3px 9px; font-size: .8rem; background: #fff; color: #1f4e79; }
 ul.manage button.del { color: #b3261e; border-color: #b3261e; }
@@ -76,6 +80,7 @@ ul.manage button:disabled { opacity: .35; cursor: not-allowed; }
   #expenseForm .wide { grid-column: span 1; }
   .actions button { flex: 1 1 100%; }
   ul.manage button { min-height: 36px; }
+  .handle { font-size: 1.5rem; padding: 10px 12px; margin-left: -6px; }   /* bigger touch target for dragging */
   .total.big strong { font-size: 1.7rem; }
 
   /* transaction table -> one card per transaction */

@@ -88,7 +88,7 @@ function renderManage() {
   const build = (ul, list, txKey, kind) => {
     ul.innerHTML = state[list].map((name, i) => {
       const used = state.transactions.filter(t => t[txKey] === name).length;
-      return `<li><span>${esc(name)} <small>(${used})</small></span>
+      return `<li data-i="${i}"><span class="handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</span><span class="nm">${esc(name)} <small>(${used})</small></span>
         <button type="button" data-kind="${kind}" data-i="${i}" data-act="rename">Rename</button>
         <button type="button" class="del" data-kind="${kind}" data-i="${i}" data-act="delete" ${used ? 'disabled title="In use by transactions"' : ''}>Delete</button></li>`;
     }).join('');
@@ -122,6 +122,42 @@ function manageClick(e) {
   if (pending) fx.value = pending;
   render(); toast('List updated');
 }
+/* drag to reorder (pointer events: works with mouse and touch) */
+function enableDrag(ul, list) {
+  let dragLi = null;
+  ul.addEventListener('pointerdown', e => {
+    const h = e.target.closest('.handle');
+    if (!h) return;
+    dragLi = h.closest('li');
+    dragLi.classList.add('dragging');
+    ul.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  ul.addEventListener('pointermove', e => {
+    if (!dragLi) return;
+    const others = [...ul.children].filter(l => l !== dragLi);
+    const next = others.find(l => { const r = l.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+    if (next) { if (dragLi.nextElementSibling !== next) ul.insertBefore(dragLi, next); }
+    else if (ul.lastElementChild !== dragLi) ul.appendChild(dragLi);
+    if (e.clientY < 70) window.scrollBy(0, -12);                       // auto-scroll near screen edges
+    else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+  });
+  const end = () => {
+    if (!dragLi) return;
+    dragLi.classList.remove('dragging');
+    const order = [...ul.children].map(l => +l.dataset.i);
+    dragLi = null;
+    if (order.every((v, k) => v === k)) return;                         // nothing moved
+    const old = state[list];
+    state[list] = order.map(i => old[i]);
+    save(); refreshLists(); toast('Order saved');
+  };
+  ul.addEventListener('pointerup', end);
+  ul.addEventListener('pointercancel', end);
+}
+enableDrag($('manageModes'), 'modes');
+enableDrag($('manageCats'), 'categories');
+
 function setManage(open) {
   $('manageSection').hidden = !open;
   $('manageToggle').setAttribute('aria-expanded', open);
